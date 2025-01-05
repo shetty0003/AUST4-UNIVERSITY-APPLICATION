@@ -1,0 +1,22 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.aust4">
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Ensure this meta-data tag is in the manifest but outside of <application> -->
+    <meta-data
+        android:name="com.google.android.geo.API_KEY"
+        android:value="YOUR_API_KEY"/>
+
+    <application
+        android:label="aust4"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+        <!-- Other configurations, activities, etc. -->
+
+    </application>
+</manifest>

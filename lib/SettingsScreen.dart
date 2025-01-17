@@ -1,131 +1,122 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'profile_screen.dart'; // Ensure this file has a valid ProfileScreen widget
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+import 'profiles_screen.dart';
+import 'email_settings_screen.dart';
+import 'push_notifications_screen.dart';
+import 'language_selection_screen.dart';
+
+class ModernSettingsScreen extends StatefulWidget {
+  const ModernSettingsScreen({Key? key}) : super(key: key);
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  State<ModernSettingsScreen> createState() => _ModernSettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDarkMode = false; // Default theme is light
+class _ModernSettingsScreenState extends State<ModernSettingsScreen> {
+  bool _isDarkMode = false;
+  String _selectedLanguage = 'English';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkMode = prefs.getBool('isDarkMode') ?? false;
+      _selectedLanguage = prefs.getString('language') ?? 'English';
+    });
+  }
+
+  Future<void> _saveDarkModePreference(bool isDarkMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDarkMode', isDarkMode);
+    // Save to Firestore
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser?.uid)
+        .set({'isDarkMode': isDarkMode}, SetOptions(merge: true));
+  }
+
+  Future<void> _saveLanguagePreference(String language) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', language);
+    // Save to Firestore
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser?.uid)
+        .set({'language': language}, SetOptions(merge: true));
+  }
 
   void _toggleDarkMode() {
     setState(() {
       _isDarkMode = !_isDarkMode;
     });
-
-    // Display feedback to the user
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_isDarkMode ? 'Dark mode enabled' : 'Light mode enabled'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    _saveDarkModePreference(_isDarkMode);
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(
+        appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Colors.orangeAccent,
+    backgroundColor: colorScheme.primary,
+    foregroundColor: colorScheme.onPrimary,
+    elevation: 1,
+    ),
+    body: ListView(
+    padding: const EdgeInsets.all(16.0),
+    children: [
+       _buildSettingsOption(
+        context,
+        title: 'Push Notifications',
+        icon: Icons.notifications,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PushNotificationsScreen(),
+            ),
+          );
+        },
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            _buildSectionTitle('Account Settings'),
-            _buildSettingsOption(
-              context,
-              title: 'Profile',
-              icon: Icons.account_circle,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfileScreen()),
-                );
-              },
+      const Divider(),
+      _buildSectionTitle('App Settings'),
+      _buildSettingsOption(
+        context,
+        title: 'Language',
+        icon: Icons.language,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LanguageSelectionScreen(),
             ),
-            _buildSettingsOption(
-              context,
-              title: 'Email Settings',
-              icon: Icons.email,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PlaceholderScreen('Email Settings')),
-                );
-              },
-            ),
-            _buildDivider(),
-            _buildSectionTitle('Notification Settings'),
-            _buildSettingsOption(
-              context,
-              title: 'Push Notifications',
-              icon: Icons.notifications,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PlaceholderScreen('Push Notifications')),
-                );
-              },
-            ),
-            _buildDivider(),
-            _buildSectionTitle('App Settings'),
-            _buildSettingsOption(
-              context,
-              title: 'Dark Mode',
-              icon: Icons.dark_mode,
-              onTap: _toggleDarkMode,
-            ),
-            _buildSettingsOption(
-              context,
-              title: 'Language',
-              icon: Icons.language,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PlaceholderScreen('Language')),
-                );
-              },
-            ),
-            _buildDivider(),
-            _buildSettingsOption(
-              context,
-              title: 'Log Out',
-              icon: Icons.logout,
-              onTap: () async {
-                try {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacementNamed(context, '/login');
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error signing out: $e'),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
+          );
+        },
+      ),
+      _buildSettingsOption(
+        context,
+        title: 'Dark Mode',
+        icon: _isDarkMode ? Icons.dark_mode : Icons.light_mode,
+        onTap: _toggleDarkMode,
+        trailing: Switch(
+          value: _isDarkMode,
+          onChanged: (value) {
+            _toggleDarkMode();
+          },
         ),
       ),
+    ],
+    ),
     );
-  }
-
-  Widget _buildSettingsOption(BuildContext context, {required String title, required IconData icon, required VoidCallback onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.orangeAccent),
-      title: Text(title),
-      onTap: onTap,
-    );
-  }
-
-  Widget _buildDivider() {
-    return const Divider();
   }
 
   Widget _buildSectionTitle(String title) {
@@ -133,27 +124,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 18.0,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
-}
 
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const PlaceholderScreen(this.title, {Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.orangeAccent,
-      ),
-      body: Center(
-        child: Text('This is the $title screen'),
-      ),
+  Widget _buildSettingsOption(
+      BuildContext context, {
+        required String title,
+        required IconData icon,
+        required VoidCallback onTap,
+        Widget? trailing,
+      }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+      leading: Icon(icon),
+      title: Text(title),
+      trailing: trailing,
+      onTap: onTap,
     );
   }
 }

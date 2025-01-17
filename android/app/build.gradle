@@ -8,13 +8,13 @@ apply plugin: 'com.google.gms.google-services'
 
 android {
     namespace = "com.example.aust4"
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     defaultConfig {
         applicationId "com.example.aust4"
         minSdkVersion 23
-        targetSdkVersion 33
+        targetSdkVersion 34 // Updated to match compileSdk
         versionCode flutter.versionCode
         versionName flutter.versionName
     }
@@ -32,7 +32,7 @@ android {
         release {
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.debug // Replace with your release signing configuration for production
+            signingConfig signingConfigs.debug // Replace with your release signing configuration
         }
     }
 }
@@ -43,7 +43,7 @@ flutter {
 
 dependencies {
     implementation 'androidx.profileinstaller:profileinstaller:1.4.1'
-    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation platform('com.google.firebase:firebase-bom:33.7.0') // Update if needed
     implementation 'com.google.firebase:firebase-auth-ktx'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
 }
